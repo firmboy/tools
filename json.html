@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON 格式化工具</title>
+    <!-- 引入 JSONEditor 的 CSS 和 JS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/jsoneditor/9.10.0/jsoneditor.min.css" rel="stylesheet" type="text/css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsoneditor/9.10.0/jsoneditor.min.js"></script>
+    <style>
+        .container {
+            max-width: 1000px;
+            margin: 20px auto;
+            padding: 0 20px;
+        }
+        #jsoneditor {
+            height: 500px;
+        }
+        .button-container {
+            margin: 10px 0;
+        }
+        .button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+        .button:hover {
+            background-color: #45a049;
+        }
+        .error {
+            color: red;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>JSON 格式化工具</h1>
+        <div class="button-container">
+            <button class="button" onclick="formatJSON()">格式化 JSON</button>
+            <button class="button" onclick="compressJSON()">压缩 JSON</button>
+        </div>
+        <div id="jsoneditor"></div>
+        <div id="error" class="error"></div>
+    </div>
+
+    <script>
+        // 创建编辑器
+        const container = document.getElementById('jsoneditor');
+        const options = {
+            mode: 'code',
+            modes: ['code', 'form', 'text', 'tree', 'view', 'preview'],
+            onError: function(err) {
+                document.getElementById('error').textContent = '无效的 JSON 格式：' + err.message;
+            },
+            onChangeText: function(text) {
+                document.getElementById('error').textContent = '';
+            },
+            language: 'zh-CN'
+        };
+        const editor = new JSONEditor(container, options);
+
+        // 设置初始内容
+        editor.set({});
+
+        function formatJSON() {
+            try {
+                const json = editor.get();
+                editor.set(json);
+                editor.setMode('tree');
+                document.getElementById('error').textContent = '';
+            } catch (e) {
+                document.getElementById('error').textContent = '无效的 JSON 格式：' + e.message;
+            }
+        }
+
+        function compressJSON() {
+            try {
+                const json = editor.get();
+                editor.setMode('code');
+                editor.setText(JSON.stringify(json));
+                document.getElementById('error').textContent = '';
+            } catch (e) {
+                document.getElementById('error').textContent = '无效的 JSON 格式：' + e.message;
+            }
+        }
+    </script>
+</body>
+</html>
