@@ -38,56 +38,83 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>JSON 格式化工具</h1>
-        <div class="button-container">
-            <button class="button" onclick="formatJSON()">格式化 JSON</button>
-            <button class="button" onclick="compressJSON()">压缩 JSON</button>
-        </div>
-        <div id="jsoneditor"></div>
-        <div id="error" class="error"></div>
+<div class="container">
+    <h1>JSON 格式化工具</h1>
+    <div class="button-container">
+        <button class="button" onclick="formatJSON()">格式化 JSON</button>
+        <button class="button" onclick="compressJSON()">压缩 JSON</button>
+        
+        <!-- 新增的两个按钮 -->
+        <button class="button" onclick="escapeJSON()">转义 JSON</button>
+        <button class="button" onclick="unescapeJSON()">去转义 JSON</button>
     </div>
+    <div id="jsoneditor"></div>
+    <div id="error" class="error"></div>
+</div>
 
-    <script>
-        // 创建编辑器
-        const container = document.getElementById('jsoneditor');
-        const options = {
-            mode: 'code',
-            modes: ['code', 'form', 'text', 'tree', 'view', 'preview'],
-            onError: function(err) {
-                document.getElementById('error').textContent = '无效的 JSON 格式：' + err.message;
-            },
-            onChangeText: function(text) {
-                document.getElementById('error').textContent = '';
-            },
-            language: 'zh-CN'
-        };
-        const editor = new JSONEditor(container, options);
+<script>
+    // 创建编辑器
+    const container = document.getElementById('jsoneditor');
+    const options = {
+        mode: 'code',
+        modes: ['code', 'form', 'text', 'tree', 'view', 'preview'],
+        onError: function(err) {
+            document.getElementById('error').textContent = '无效的 JSON 格式：' + err.message;
+        },
+        onChangeText: function(text) {
+            document.getElementById('error').textContent = '';
+        },
+        language: 'zh-CN'
+    };
+    const editor = new JSONEditor(container, options);
 
-        // 设置初始内容
-        editor.set({});
+    // 设置初始内容
+    editor.set({});
 
-        function formatJSON() {
-            try {
-                const json = editor.get();
-                editor.set(json);
-                editor.setMode('tree');
-                document.getElementById('error').textContent = '';
-            } catch (e) {
-                document.getElementById('error').textContent = '无效的 JSON 格式：' + e.message;
-            }
+    function formatJSON() {
+        try {
+            const json = editor.get();
+            editor.set(json);
+            editor.setMode('tree');
+            document.getElementById('error').textContent = '';
+        } catch (e) {
+            document.getElementById('error').textContent = '无效的 JSON 格式：' + e.message;
         }
+    }
 
-        function compressJSON() {
-            try {
-                const json = editor.get();
-                editor.setMode('code');
-                editor.setText(JSON.stringify(json));
-                document.getElementById('error').textContent = '';
-            } catch (e) {
-                document.getElementById('error').textContent = '无效的 JSON 格式：' + e.message;
-            }
+    function compressJSON() {
+        try {
+            const json = editor.get();
+            editor.setMode('code');
+            editor.setText(JSON.stringify(json));
+            document.getElementById('error').textContent = '';
+        } catch (e) {
+            document.getElementById('error').textContent = '无效的 JSON 格式：' + e.message;
         }
-    </script>
+    }
+
+    // 修改后的 escapeJSON 函数
+    function escapeJSON() {
+        try {
+            const jsonText = editor.getText(); // 获取当前编辑器中的文本内容
+            editor.setText(jsonText.replace(/"/g, '\\"')); // 将所有双引号替换为 \" 并设置回去
+            document.getElementById('error').textContent = '';
+        } catch (e) {
+            document.getElementById('error').textContent = '无效的 JSON 格式：' + e.message;
+        }
+    }
+
+    // 修改后的 unescapeJSON 函数
+    function unescapeJSON() {
+        try {
+            let escapedJsonStr = editor.getText().replace(/\\"/g, '"'); // 将所有的 \\" 还原为 "
+            editor.setText(escapedJsonStr); // 设置回去
+            document.getElementById('error').textContent = '';
+        } catch (e) {
+            document.getElementById('error').textContent = '无效的 JSON 格式：' + e.message;
+        }
+    }
+</script>
 </body>
+</html>
 </html>
