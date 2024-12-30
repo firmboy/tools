@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>开发工具集</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .tool-card {
+            transition: all 0.3s ease;
+        }
+        .tool-card:hover {
+            transform: translateY(-5px);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="max-w-6xl mx-auto px-4 py-12">
+        <h1 class="text-4xl font-bold text-center text-gray-800 mb-4">开发工具集</h1>
+        <p class="text-center text-gray-600 mb-12">选择下面的工具开始使用</p>
+
+        <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            <!-- JSON 工具卡片 -->
+            <a href="json.html" class="tool-card block bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl">
+                <div class="p-8">
+                    <div class="w-16 h-16 bg-blue-500 rounded-lg flex items-center justify-center mb-6">
+                        <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+                        </svg>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-3">JSON 格式化工具</h2>
+                    <p class="text-gray-600">格式化和压缩 JSON 数据，支持语法验证和可视化编辑。</p>
+                </div>
+            </a>
+
+            <!-- 正则表达式工具卡片 -->
+            <a href="regular.html" class="tool-card block bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl">
+                <div class="p-8">
+                    <div class="w-16 h-16 bg-green-500 rounded-lg flex items-center justify-center mb-6">
+                        <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                        </svg>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-3">正则表达式测试工具</h2>
+                    <p class="text-gray-600">在线测试和验证正则表达式，实时查看匹配结果。</p>
+                </div>
+            </a>
+        </div>
+
+        <footer class="text-center mt-16 text-gray-500 text-sm">
+            <p>© 2024 开发工具集 - 让开发更轻松</p>
+        </footer>
+    </div>
+</body>
+</html>
