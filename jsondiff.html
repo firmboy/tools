@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON Diff 对比工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/diff_match_patch/20121119/diff_match_patch_uncompressed.js"></script>
+    <style>
+        .diff-add {
+            background-color: #e6ffe6;
+            color: #0b6623;
+        }
+        .diff-del {
+            background-color: #ffe6e6;
+            color: #cc0000;
+        }
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .json-key { color: #881391; }
+        .json-string { color: #c41a16; }
+        .json-number { color: #1c00cf; }
+        .json-boolean { color: #0000ff; }
+        .json-null { color: #808080; }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="max-w-7xl mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold text-gray-800 mb-8">JSON Diff 对比工具</h1>
+        
+        <div class="grid grid-cols-2 gap-6 mb-6">
+            <!-- 左侧 JSON -->
+            <div class="flex flex-col">
+                <h3 class="text-lg font-semibold text-gray-700 mb-3">原始 JSON</h3>
+                <textarea 
+                    id="jsonLeft" 
+                    class="h-[400px] p-4 rounded-lg border border-gray-300 font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="输入原始 JSON"
+                ></textarea>
+            </div>
+            
+            <!-- 右侧 JSON -->
+            <div class="flex flex-col">
+                <h3 class="text-lg font-semibold text-gray-700 mb-3">对比 JSON</h3>
+                <textarea 
+                    id="jsonRight" 
+                    class="h-[400px] p-4 rounded-lg border border-gray-300 font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="输入要对比的 JSON"
+                ></textarea>
+            </div>
+        </div>
+
+        <!-- 操作按钮 -->
+        <div class="flex justify-center gap-4 mb-6">
+            <button 
+                onclick="formatBoth()" 
+                class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+            >
+                格式化
+            </button>
+            <button 
+                onclick="sortBoth()" 
+                class="px-4 py-2 bg-purple-500 text-white rounded-md hover:bg-purple-600 transition-colors"
+            >
+                排序
+            </button>
+            <button 
+                onclick="compareJSON()" 
+                class="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
+            >
+                对比差异
+            </button>
+        </div>
+
+        <!-- 对比结果 -->
+        <div class="bg-white rounded-lg border border-gray-300 p-6">
+            <h3 class="text-lg font-semibold text-gray-700 mb-3">对比结果</h3>
+            <div id="diffResult" class="font-mono text-sm overflow-x-auto"></div>
+        </div>
+    </div>
+
+    <script>
+        function formatJSON(json) {
+            try {
+                return JSON.stringify(JSON.parse(json), null, 4);
+            } catch (e) {
+                return json;
+            }
+        }
+
+        function formatBoth() {
+            const leftElem = document.getElementById('jsonLeft');
+            const rightElem = document.getElementById('jsonRight');
+            
+            try {
+                leftElem.value = formatJSON(leftElem.value);
+                rightElem.value = formatJSON(rightElem.value);
+            } catch (e) {
+                alert('JSON 格式错误：' + e.message);
+            }
+        }
+
+        function syntaxHighlight(json) {
+            if (!json) return '';
+            json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+                let cls = 'json-number';
+                if (/^"/.test(match)) {
+                    if (/:$/.test(match)) {
+                        cls = 'json-key';
+                    } else {
+                        cls = 'json-string';
+                    }
+                } else if (/true|false/.test(match)) {
+                    cls = 'json-boolean';
+                } else if (/null/.test(match)) {
+                    cls = 'json-null';
+                }
+                return '<span class="' + cls + '">' + match + '</span>';
+            });
+        }
+
+        function compareJSON() {
+            const leftJson = document.getElementById('jsonLeft').value;
+            const rightJson = document.getElementById('jsonRight').value;
+            
+            try {
+                // 格式化 JSON
+                const left = formatJSON(leftJson);
+                const right = formatJSON(rightJson);
+
+                // 创建 diff 实例
+                const diffMatchPatch = new diff_match_patch();
+                const diffs = diffMatchPatch.diff_main(left, right);
+                diffMatchPatch.diff_cleanupSemantic(diffs);
+
+                // 生成 HTML
+                let html = '<pre>';
+                for (let diff of diffs) {
+                    const [type, text] = diff;
+                    const highlightedText = syntaxHighlight(text);
+                    
+                    if (type === 1) { // 新增
+                        html += `<span class="diff-add">${highlightedText}</span>`;
+                    } else if (type === -1) { // 删除
+                        html += `<span class="diff-del">${highlightedText}</span>`;
+                    } else { // 相同
+                        html += highlightedText;
+                    }
+                }
+                html += '</pre>';
+
+                document.getElementById('diffResult').innerHTML = html;
+            } catch (e) {
+                alert('JSON 格式错误：' + e.message);
+            }
+        }
+
+        function sortJSON(obj) {
+            // 如果是数组，递归排序数组中的对象
+            if (Array.isArray(obj)) {
+                return obj.map(item => {
+                    if (typeof item === 'object' && item !== null) {
+                        return sortJSON(item);
+                    }
+                    return item;
+                });
+            }
+            
+            // 如果是对象，对键进行排序
+            if (typeof obj === 'object' && obj !== null) {
+                const sorted = {};
+                Object.keys(obj)
+                    .sort((a, b) => a.localeCompare(b))
+                    .forEach(key => {
+                        const value = obj[key];
+                        // 递归处理嵌套的对象和数组
+                        if (typeof value === 'object' && value !== null) {
+                            sorted[key] = sortJSON(value);
+                        } else {
+                            sorted[key] = value;
+                        }
+                    });
+                return sorted;
+            }
+            
+            return obj;
+        }
+
+        function sortBoth() {
+            const leftElem = document.getElementById('jsonLeft');
+            const rightElem = document.getElementById('jsonRight');
+            
+            try {
+                // 处理左侧 JSON
+                if (leftElem.value.trim()) {
+                    const leftObj = JSON.parse(leftElem.value);
+                    const sortedLeft = sortJSON(leftObj);
+                    leftElem.value = JSON.stringify(sortedLeft, null, 4);
+                }
+
+                // 处理右侧 JSON
+                if (rightElem.value.trim()) {
+                    const rightObj = JSON.parse(rightElem.value);
+                    const sortedRight = sortJSON(rightObj);
+                    rightElem.value = JSON.stringify(sortedRight, null, 4);
+                }
+            } catch (e) {
+                alert('JSON 格式错误：' + e.message);
+            }
+        }
+    </script>
+</body>
+</html>
