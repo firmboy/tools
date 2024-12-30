@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>正则表达式测试工具</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        .copy-success {
+            animation: fadeOut 2s forwards;
+        }
+
+        @keyframes fadeOut {
+            0% { opacity: 1; }
+            70% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="max-w-7xl mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold text-gray-800 mb-8">正则表达式测试工具</h1>
+        <div class="flex gap-6 h-[calc(100vh-180px)]">
+            <div class="flex-1 flex flex-col">
+                <h3 class="text-lg font-semibold text-gray-700 mb-3">测试文本</h3>
+                <textarea 
+                    id="sourceText" 
+                    placeholder="在此输入要测试的文本" 
+                    class="flex-1 p-4 rounded-lg border border-gray-300 font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                ></textarea>
+            </div>
+            <div class="flex-1 flex flex-col">
+                <h3 class="text-lg font-semibold text-gray-700 mb-3">正则表达式</h3>
+                <div class="flex items-center gap-2 p-2 bg-white rounded-lg border border-gray-300">
+                    <span class="text-gray-500">/</span>
+                    <input 
+                        type="text" 
+                        id="regexInput" 
+                        placeholder="输入正则表达式" 
+                        class="flex-1 font-mono text-sm focus:outline-none"
+                    >
+                    <span class="text-gray-500">/</span>
+                </div>
+                <div class="flex gap-4 my-4">
+                    <label class="flex items-center gap-2 text-sm text-gray-600">
+                        <input type="checkbox" id="flagG" checked class="rounded text-blue-500 focus:ring-blue-500">
+                        <span>g (全局)</span>
+                    </label>
+                    <label class="flex items-center gap-2 text-sm text-gray-600">
+                        <input type="checkbox" id="flagI" class="rounded text-blue-500 focus:ring-blue-500">
+                        <span>i (忽略大小写)</span>
+                    </label>
+                    <label class="flex items-center gap-2 text-sm text-gray-600">
+                        <input type="checkbox" id="flagM" class="rounded text-blue-500 focus:ring-blue-500">
+                        <span>m (多行)</span>
+                    </label>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-700 mb-3">匹配结果</h3>
+                <div class="flex items-center gap-3 mb-3">
+                    <div id="matchCount" class="text-sm text-gray-600">找到 0 处匹配</div>
+                    <button 
+                        id="copyAllButton" 
+                        class="hidden px-3 py-1.5 bg-blue-500 text-white text-sm rounded-md hover:bg-blue-600 transition-colors"
+                    >
+                        复制所有结果
+                    </button>
+                </div>
+                <div 
+                    id="resultText" 
+                    class="flex-1 p-4 bg-white rounded-lg border border-gray-300 overflow-y-auto font-mono text-sm"
+                ></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const sourceText = document.getElementById('sourceText');
+        const regexInput = document.getElementById('regexInput');
+        const flagG = document.getElementById('flagG');
+        const flagI = document.getElementById('flagI');
+        const flagM = document.getElementById('flagM');
+        const resultText = document.getElementById('resultText');
+        const matchCount = document.getElementById('matchCount');
+
+        function escapeHtml(text) {
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        async function copyToClipboard(text, button) {
+            try {
+                await navigator.clipboard.writeText(text);
+                const span = document.createElement('span');
+                span.className = 'copy-success';
+                span.textContent = '复制成功';
+                button.parentNode.appendChild(span);
+                setTimeout(() => span.remove(), 2000);
+            } catch (err) {
+                console.error('复制失败:', err);
+            }
+        }
+
+        function updateResult() {
+            const source = sourceText.value;
+            const pattern = regexInput.value;
+            const copyAllButton = document.getElementById('copyAllButton');
+            
+            if (!pattern || !source) {
+                resultText.innerHTML = '<div class="no-matches">无匹配结果</div>';
+                matchCount.textContent = '找到 0 处匹配';
+                copyAllButton.style.display = 'none';
+                return;
+            }
+
+            try {
+                let flags = '';
+                if (flagG.checked) flags += 'g';
+                if (flagI.checked) flags += 'i';
+                if (flagM.checked) flags += 'm';
+
+                const regex = new RegExp(pattern, flags);
+                let matches = [];
+                let match;
+                let html = '';
+
+                if (flags.includes('g')) {
+                    while ((match = regex.exec(source)) !== null) {
+                        matches.push({
+                            text: match[0],
+                            index: match.index,
+                            groups: match.slice(1)
+                        });
+                    }
+                } else {
+                    match = regex.exec(source);
+                    if (match) {
+                        matches.push({
+                            text: match[0],
+                            index: match.index,
+                            groups: match.slice(1)
+                        });
+                    }
+                }
+
+                if (matches.length === 0) {
+                    resultText.innerHTML = '<div class="no-matches">无匹配结果</div>';
+                    copyAllButton.style.display = 'none';
+                } else {
+                    let allResults = [];
+                    matches.forEach((match, index) => {
+                        const resultText = match.groups.length > 0 ? match.groups[match.groups.length - 1] : match.text;
+                        allResults.push(resultText);
+                        
+                        html += `
+                            <div class="p-4 bg-gray-50 rounded-lg mb-3 last:mb-0">
+                                <div class="text-sm text-gray-500 mb-2">匹配 #${index + 1} (位置: ${match.index})</div>
+                                <div class="p-2 bg-white rounded border border-gray-200">${escapeHtml(match.text)}</div>
+                                ${match.groups.length > 0 ? `
+                                    <div class="mt-2 space-y-1">
+                                        ${match.groups.map((group, i) => 
+                                            `<div class="text-sm">
+                                                <span class="text-gray-500">组 ${i + 1}:</span> 
+                                                <span class="text-gray-700">${escapeHtml(group)}</span>
+                                            </div>`
+                                        ).join('')}
+                                    </div>
+                                ` : ''}
+                            </div>
+                        `;
+                    });
+                    resultText.innerHTML = html;
+                    copyAllButton.style.display = 'inline-block';
+                    copyAllButton.onclick = () => copyToClipboard(allResults.join('\n'), copyAllButton);
+                }
+
+                matchCount.textContent = `找到 ${matches.length} 处匹配`;
+            } catch (e) {
+                resultText.innerHTML = `<div class="no-matches">正则表达式错误: ${e.message}</div>`;
+                matchCount.textContent = '正则表达式错误';
+                copyAllButton.style.display = 'none';
+            }
+        }
+
+        // 添加事件监听
+        sourceText.addEventListener('input', updateResult);
+        regexInput.addEventListener('input', updateResult);
+        flagG.addEventListener('change', updateResult);
+        flagI.addEventListener('change', updateResult);
+        flagM.addEventListener('change', updateResult);
+    </script>
+</body>
+</html>
