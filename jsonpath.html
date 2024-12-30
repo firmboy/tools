@@ -336,11 +336,11 @@
         }
     }
 
-    // 历史记录管理
+    // 全局变量定义
     const HISTORY_KEY = 'jsonpath_history';
     const MAX_DAYS = 30;
     const PAGE_SIZE = 10;
-    let currentPage = 1;
+    let modalCurrentPage = 1;
 
     // 保存历史记录
     function saveToHistory(jsonPath, jsonData) {
@@ -355,7 +355,8 @@
         history.unshift(historyItem); // 添加到开头
         localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
         
-        displayHistory(); // 更新显示
+        // 移除这行，因为我们不再需要实时显示历史记录
+        // displayHistory();
     }
 
     // 获取历史记录
@@ -373,62 +374,6 @@
         return history;
     }
 
-    // 显示历史记录
-    function displayHistory() {
-        const history = getHistory();
-        const historyList = document.getElementById('historyList');
-        const totalPages = Math.ceil(history.length / PAGE_SIZE);
-        const start = (currentPage - 1) * PAGE_SIZE;
-        const end = start + PAGE_SIZE;
-        const pageItems = history.slice(start, end);
-        
-        historyList.innerHTML = '';
-        
-        pageItems.forEach(item => {
-            const date = new Date(item.timestamp).toLocaleString();
-            const div = document.createElement('div');
-            div.className = 'p-3 hover:bg-gray-50 cursor-pointer';
-            div.innerHTML = `
-                <div class="flex justify-between items-center">
-                    <div class="text-sm text-gray-800">${item.jsonPath}</div>
-                    <div class="text-xs text-gray-500">${date}</div>
-                </div>
-            `;
-            div.onclick = () => {
-                document.getElementById('jsonInput').value = item.jsonData;
-                document.getElementById('jsonPath').value = item.jsonPath;
-            };
-            historyList.appendChild(div);
-        });
-        
-        // 更新分页信息
-        document.getElementById('pageInfo').textContent = `第 ${currentPage}/${totalPages || 1} 页`;
-        document.getElementById('prevPage').disabled = currentPage === 1;
-        document.getElementById('nextPage').disabled = currentPage >= totalPages;
-    }
-
-    // 确保 DOM 完全加载后再初始化历史记录
-    window.addEventListener('load', function() {
-        displayHistory();
-        
-        // 初始化分页按钮事件
-        document.getElementById('prevPage').addEventListener('click', () => {
-            if (currentPage > 1) {
-                currentPage--;
-                displayHistory();
-            }
-        });
-
-        document.getElementById('nextPage').addEventListener('click', () => {
-            const history = getHistory();
-            const totalPages = Math.ceil(history.length / PAGE_SIZE);
-            if (currentPage < totalPages) {
-                currentPage++;
-                displayHistory();
-            }
-        });
-    });
-
     // 显示历史记录弹窗
     function showHistoryModal() {
         modalCurrentPage = 1; // 重置页码
@@ -444,7 +389,7 @@
         modalCurrentPage = 1; // 重置页码
     }
 
-    // 在弹窗中显示历史记录（带分页）
+    // 在弹窗中显示历史记录
     function displayModalHistory() {
         const history = getHistory();
         const historyList = document.getElementById('modalHistoryList');
@@ -488,25 +433,9 @@
         nextButton.classList.toggle('opacity-50', modalCurrentPage >= totalPages);
     }
 
-    // 点击弹窗外部关闭弹窗
-    document.getElementById('historyModal').addEventListener('click', (e) => {
-        if (e.target.id === 'historyModal') {
-            closeHistoryModal();
-        }
-    });
-
-    // ESC 键关闭弹窗
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-            closeHistoryModal();
-        }
-    });
-
-    // 初始化弹窗分页按钮事件
-    window.addEventListener('load', function() {
-        // ... 现有的代码 ...
-
-        // 添加弹窗分页按钮事件
+    // 初始化事件监听
+    document.addEventListener('DOMContentLoaded', function() {
+        // 初始化弹窗分页按钮事件
         document.getElementById('modalPrevPage').addEventListener('click', () => {
             if (modalCurrentPage > 1) {
                 modalCurrentPage--;
@@ -520,6 +449,20 @@
             if (modalCurrentPage < totalPages) {
                 modalCurrentPage++;
                 displayModalHistory();
+            }
+        });
+
+        // 初始化点击弹窗外部关闭功能
+        document.getElementById('historyModal').addEventListener('click', (e) => {
+            if (e.target.id === 'historyModal') {
+                closeHistoryModal();
+            }
+        });
+
+        // ESC 键关闭弹窗
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeHistoryModal();
             }
         });
     });
