@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSONPath 提取工具</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2/dist/tailwind.min.css" rel="stylesheet">
+    <script src="./js/jsonpath.js"></script>
+    <style>
+        /* 基础样式 */
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 100%);
+            min-height: 100vh;
+        }
+
+        /* 卡片效果 */
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        /* 输入框样式 */
+        textarea, input {
+            background: rgba(249, 250, 251, 0.8);
+            transition: all 0.3s ease;
+        }
+
+        textarea:focus, input:focus {
+            background: white;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+
+        /* 按钮样式 */
+        .btn {
+            background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn:hover {
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .btn::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 100%);
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover::after {
+            opacity: 0;
+        }
+
+        /* 代码高亮 */
+        .json-key { 
+            color: #7c3aed; 
+            font-weight: 500;
+        }
+        .json-string { 
+            color: #059669; 
+        }
+        .json-number { 
+            color: #2563eb; 
+        }
+        .json-boolean { 
+            color: #7c3aed; 
+            font-weight: 500;
+        }
+        .json-null { 
+            color: #6b7280; 
+            font-style: italic;
+        }
+
+        /* 滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 3px;
+            transition: all 0.3s ease;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        /* 错误提示样式 */
+        .error-message {
+            background: rgba(254, 226, 226, 0.9);
+            border-left: 4px solid #dc2626;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+
+        /* 工具提示 */
+        [data-tooltip] {
+            position: relative;
+        }
+
+        [data-tooltip]:hover::before {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 0.5rem 1rem;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            border-radius: 0.25rem;
+            font-size: 0.875rem;
+            white-space: nowrap;
+            z-index: 10;
+            animation: fadeIn 0.2s ease-out forwards;
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            .card {
+                margin: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 主容器 -->
+    <div class="max-w-full min-h-screen flex flex-col bg-gray-50">
+        <!-- 标题部分 -->
+        <div class="bg-white shadow-sm p-1">
+            <h1 class="text-xl font-bold text-gray-800 px-2">JSONPath 提取工具</h1>
+        </div>
+
+        <!-- 主要内容区域 -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-2 flex-1 p-1">
+            <!-- 左侧：JSON数据 -->
+            <div class="bg-white rounded-lg shadow-sm">
+                <div class="p-2 border-b border-gray-100 flex justify-between items-center">
+                    <span class="text-sm text-gray-600">JSON 数据</span>
+                    <button 
+                        onclick="formatJSON()"
+                        class="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-sm flex items-center gap-1"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+                        </svg>
+                        格式化
+                    </button>
+                </div>
+                <div class="p-1">
+                    <textarea 
+                        id="jsonInput" 
+                        class="w-full h-[calc(100vh-50px)] p-3 rounded border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-mono text-sm resize-none"
+                        placeholder="在此输入 JSON 数据..."
+                        style="min-height: 800px;"
+                    ></textarea>
+                </div>
+            </div>
+
+            <!-- 右侧：JSONPath表达式和提取结果 -->
+            <div class="space-y-2">
+                <!-- JSONPath 表达式输入 -->
+                <div class="bg-white rounded-lg shadow-sm">
+                    <div class="p-2 border-b border-gray-100">
+                        <span class="text-sm text-gray-600">JSONPath 表达式</span>
+                    </div>
+                    <div class="p-2">
+                        <div class="flex gap-2">
+                            <input 
+                                type="text" 
+                                id="pathInput"
+                                class="flex-1 p-2 rounded border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-mono text-sm"
+                                placeholder="输入 JSONPath 表达式，例如: $.store.book[*].author"
+                            >
+                            <button 
+                                onclick="extractData()"
+                                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-150 text-sm font-medium"
+                            >
+                                提取
+                            </button>
+                            <button 
+                                onclick="showHistoryModal()"
+                                class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors duration-150 text-sm font-medium flex items-center gap-1"
+                            >
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                历史
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 提取结果 -->
+                <div class="bg-white rounded-lg shadow-sm flex-1">
+                    <div class="p-2 border-b border-gray-100 flex justify-between items-center">
+                        <span class="text-sm text-gray-600">提取结果</span>
+                        <button 
+                            onclick="copyResult()"
+                            class="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-sm flex items-center gap-1"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+                            </svg>
+                            复制
+                        </button>
+                    </div>
+                    <div class="p-1">
+                        <div 
+                            id="resultOutput"
+                            class="h-[calc(100vh-120px)] p-3 rounded border border-gray-200 overflow-y-auto font-mono text-sm"
+                        ></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 添加历史记录弹窗 -->
+        <div id="historyModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+            <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl mx-4">
+                <div class="p-4 border-b border-gray-200 flex justify-between items-center">
+                    <h3 class="text-lg font-medium">历史记录</h3>
+                    <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-2">
+                            <button id="modalPrevPage" class="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-sm">上一页</button>
+                            <span id="modalPageInfo" class="text-sm text-gray-600">第 1 页</span>
+                            <button id="modalNextPage" class="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-sm">下一页</button>
+                        </div>
+                        <button onclick="closeHistoryModal()" class="text-gray-500 hover:text-gray-700">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="p-4 max-h-[70vh] overflow-y-auto">
+                    <div id="modalHistoryList" class="divide-y divide-gray-100">
+                        <!-- 历史记录将在这里动态显示 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    function extractData() {
+        try {
+            const jsonInput = document.getElementById('jsonInput').value;
+            const pathInput = document.getElementById('pathInput').value;
+            
+            const jsonData = JSON.parse(jsonInput);
+            const result = new JSONPath.JSONPath({
+                path: pathInput,
+                json: jsonData
+            });
+            
+            const formattedResult = JSON.stringify(result, null, 2);
+            document.getElementById('resultOutput').innerText = formattedResult;
+            
+            // 保存到历史记录
+            saveToHistory(pathInput, jsonInput);
+        } catch (error) {
+            document.getElementById('resultOutput').innerText = `错误: ${error.message}`;
+        }
+    }
+
+    function copyResult() {
+        const resultOutput = document.getElementById('resultOutput');
+        const text = resultOutput.innerText;
+        
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        
+        textarea.select();
+        try {
+            document.execCommand('copy');
+            // 创建一个临时提示元素
+            const toast = document.createElement('div');
+            toast.textContent = '复制成功';
+            toast.style.position = 'fixed';
+            toast.style.bottom = '20px';
+            toast.style.left = '50%';
+            toast.style.transform = 'translateX(-50%)';
+            toast.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+            toast.style.color = 'white';
+            toast.style.padding = '8px 16px';
+            toast.style.borderRadius = '4px';
+            toast.style.zIndex = '1000';
+            
+            document.body.appendChild(toast);
+            
+            // 1.5秒后自动移除提示
+            setTimeout(() => {
+                document.body.removeChild(toast);
+            }, 1500);
+        } catch (err) {
+            console.error('复制失败:', err);
+            alert('复制失败，请手动复制。');
+        }
+        
+        document.body.removeChild(textarea);
+    }
+
+    function formatJSON() {
+        try {
+            const jsonInput = document.getElementById('jsonInput');
+            const json = JSON.parse(jsonInput.value);
+            jsonInput.value = JSON.stringify(json, null, 2);
+        } catch (error) {
+            alert('JSON 格式错误：' + error.message);
+        }
+    }
+
+    // 历史记录管理
+    const HISTORY_KEY = 'jsonpath_history';
+    const MAX_DAYS = 30;
+    const PAGE_SIZE = 10;
+    let currentPage = 1;
+
+    // 保存历史记录
+    function saveToHistory(jsonPath, jsonData) {
+        const now = new Date().getTime();
+        const historyItem = {
+            jsonPath,
+            jsonData,
+            timestamp: now
+        };
+        
+        let history = getHistory();
+        history.unshift(historyItem); // 添加到开头
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+        
+        displayHistory(); // 更新显示
+    }
+
+    // 获取历史记录
+    function getHistory() {
+        let history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+        const now = new Date().getTime();
+        
+        // 清除超过30天的记录
+        history = history.filter(item => {
+            const days = (now - item.timestamp) / (1000 * 60 * 60 * 24);
+            return days <= MAX_DAYS;
+        });
+        
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+        return history;
+    }
+
+    // 显示历史记录
+    function displayHistory() {
+        const history = getHistory();
+        const historyList = document.getElementById('historyList');
+        const totalPages = Math.ceil(history.length / PAGE_SIZE);
+        const start = (currentPage - 1) * PAGE_SIZE;
+        const end = start + PAGE_SIZE;
+        const pageItems = history.slice(start, end);
+        
+        historyList.innerHTML = '';
+        
+        pageItems.forEach(item => {
+            const date = new Date(item.timestamp).toLocaleString();
+            const div = document.createElement('div');
+            div.className = 'p-3 hover:bg-gray-50 cursor-pointer';
+            div.innerHTML = `
+                <div class="flex justify-between items-center">
+                    <div class="text-sm text-gray-800">${item.jsonPath}</div>
+                    <div class="text-xs text-gray-500">${date}</div>
+                </div>
+            `;
+            div.onclick = () => {
+                document.getElementById('jsonInput').value = item.jsonData;
+                document.getElementById('jsonPath').value = item.jsonPath;
+            };
+            historyList.appendChild(div);
+        });
+        
+        // 更新分页信息
+        document.getElementById('pageInfo').textContent = `第 ${currentPage}/${totalPages || 1} 页`;
+        document.getElementById('prevPage').disabled = currentPage === 1;
+        document.getElementById('nextPage').disabled = currentPage >= totalPages;
+    }
+
+    // 确保 DOM 完全加载后再初始化历史记录
+    window.addEventListener('load', function() {
+        displayHistory();
+        
+        // 初始化分页按钮事件
+        document.getElementById('prevPage').addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                displayHistory();
+            }
+        });
+
+        document.getElementById('nextPage').addEventListener('click', () => {
+            const history = getHistory();
+            const totalPages = Math.ceil(history.length / PAGE_SIZE);
+            if (currentPage < totalPages) {
+                currentPage++;
+                displayHistory();
+            }
+        });
+    });
+
+    // 显示历史记录弹窗
+    function showHistoryModal() {
+        modalCurrentPage = 1; // 重置页码
+        const modal = document.getElementById('historyModal');
+        modal.classList.remove('hidden');
+        displayModalHistory();
+    }
+
+    // 关闭历史记录弹窗
+    function closeHistoryModal() {
+        const modal = document.getElementById('historyModal');
+        modal.classList.add('hidden');
+        modalCurrentPage = 1; // 重置页码
+    }
+
+    // 在弹窗中显示历史记录（带分页）
+    function displayModalHistory() {
+        const history = getHistory();
+        const historyList = document.getElementById('modalHistoryList');
+        const totalPages = Math.ceil(history.length / PAGE_SIZE);
+        const start = (modalCurrentPage - 1) * PAGE_SIZE;
+        const end = start + PAGE_SIZE;
+        const pageItems = history.slice(start, end);
+        
+        historyList.innerHTML = '';
+        
+        pageItems.forEach(item => {
+            const date = new Date(item.timestamp).toLocaleString();
+            const div = document.createElement('div');
+            div.className = 'p-3 hover:bg-gray-50 cursor-pointer transition-colors duration-150';
+            div.innerHTML = `
+                <div class="flex justify-between items-center">
+                    <div class="text-sm text-gray-800">${item.jsonPath}</div>
+                    <div class="text-xs text-gray-500">${date}</div>
+                </div>
+            `;
+            div.onclick = () => {
+                document.getElementById('jsonInput').value = item.jsonData;
+                document.getElementById('pathInput').value = item.jsonPath;
+                closeHistoryModal();
+                extractData(); // 自动执行提取
+            };
+            historyList.appendChild(div);
+        });
+
+        // 更新分页信息
+        document.getElementById('modalPageInfo').textContent = `第 ${modalCurrentPage}/${totalPages || 1} 页`;
+        
+        // 更新按钮状态
+        const prevButton = document.getElementById('modalPrevPage');
+        const nextButton = document.getElementById('modalNextPage');
+        prevButton.disabled = modalCurrentPage === 1;
+        nextButton.disabled = modalCurrentPage >= totalPages;
+        
+        // 更新按钮样式
+        prevButton.classList.toggle('opacity-50', modalCurrentPage === 1);
+        nextButton.classList.toggle('opacity-50', modalCurrentPage >= totalPages);
+    }
+
+    // 点击弹窗外部关闭弹窗
+    document.getElementById('historyModal').addEventListener('click', (e) => {
+        if (e.target.id === 'historyModal') {
+            closeHistoryModal();
+        }
+    });
+
+    // ESC 键关闭弹窗
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeHistoryModal();
+        }
+    });
+
+    // 初始化弹窗分页按钮事件
+    window.addEventListener('load', function() {
+        // ... 现有的代码 ...
+
+        // 添加弹窗分页按钮事件
+        document.getElementById('modalPrevPage').addEventListener('click', () => {
+            if (modalCurrentPage > 1) {
+                modalCurrentPage--;
+                displayModalHistory();
+            }
+        });
+
+        document.getElementById('modalNextPage').addEventListener('click', () => {
+            const history = getHistory();
+            const totalPages = Math.ceil(history.length / PAGE_SIZE);
+            if (modalCurrentPage < totalPages) {
+                modalCurrentPage++;
+                displayModalHistory();
+            }
+        });
+    });
+    </script>
+</body>
+</html>
